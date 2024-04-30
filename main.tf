@@ -75,7 +75,7 @@ module "alb" {
     }
   ]
 
-  http_listeners = [
+  listeners = [
     {
       listener = {
         port               = 80
