@@ -55,7 +55,7 @@ module "alb" {
   version = "9.9.0"
 
   name                 = "blog-alb"
-  
+
   vpc_id               = module.blog_vpc.vpc_id
   subnets              = module.blog_vpc.public_subnets
   security_groups      = [module.blog_sg.security_group_id]
@@ -75,7 +75,7 @@ module "alb" {
     }
   ]
 
-  http_tcp_listeners = [
+  http_listeners = [
     {
       listener = {
         port               = 80
