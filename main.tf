@@ -40,67 +40,65 @@ resource "aws_instance" "blog" {
   ami           = data.aws_ami.app_ami.id
   instance_type = var.instance_type
 
-  vpc_security_group_ids =  [module.blog_sg.security_group_id]
-
-  subnet_id = module.blog_vpc.public_subnets[0]
+  subnet_id              = module.blog_vpc.public_subnets[0]
+  vpc_security_group_ids = [module.blog_sg.security_group_id]
 
   tags = {
     Name = "HelloWorld"
   }
 }
 
-
 module "alb" {
   source  = "terraform-aws-modules/alb/aws"
-  version = "9.9.0"
+  version = "9.9.0" 
 
-  name                 = "blog-alb"
+  name    = "blog-alb"
+  
+  vpc_id          = "module.blog_vpc.vpc_id"
+  subnets         = ["module.blog_vpc.public_subnets"]
+  security_groups = module.blog_sg.securoty_group_id
 
-  vpc_id               = module.blog_vpc.vpc_id
-  subnets              = module.blog_vpc.public_subnets
-  security_groups      = [module.blog_sg.security_group_id]
 
-  target_groups = [
-    {
+  listeners = {
+    ex-http-https-redirect = {
+      port     = 80
+      protocol = "HTTP"
+      redirect = {
+        port        = "443"
+        protocol    = "HTTPS"
+        status_code = "HTTP_301"
+      }
+    }
+  }
+
+  target_groups = {
+    ex-instance = {
       name_prefix      = "blog"
       protocol         = "HTTP"
       port             = 80
       target_type      = "instance"
-      targets          = {
-        my_target      = {
-          target_id    = aws_instance.blog.id
-          port         = 80
+      targets = {
+        my_target = {
+          target_id = aws_instance.blog.id
+          port = 80
         }
       }
     }
-  ]
-
-  listeners = [
-    {
-      listener = {
-        port               = 80
-        protocol           = "HTTP"
-        target_group_index = 0
-      }
-    }
-  ]
+  }
 
   tags = {
-    Environment = "Dev"
+    Environment = "dev"
   }
 }
-
 
 module "blog_sg" {
   source  = "terraform-aws-modules/security-group/aws"
   version = "5.1.2"
-  name = "blog"
 
-  vpc_id = module.blog_vpc.vpc_id
-
+  name                = "blog"
+  vpc_id              = module.blog_vpc.vpc_id
   ingress_rules       = ["http-80-tcp", "https-443-tcp"]
   ingress_cidr_blocks = ["0.0.0.0/0"]
-
-  egress_rules       = ["all-all"]
-  egress_cidr_blocks = ["0.0.0.0/0"]
+  egress_rules        = ["all-all"]
+  egress_cidr_blocks  = ["0.0.0.0/0"]
 }
